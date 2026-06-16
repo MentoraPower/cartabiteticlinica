@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Convite Biteti Beauty — Inauguração São Paulo</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Playfair+Display:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --gold:       #C9A84C;
+  --gold-dark:  #8A6010;
+  --cream:      #FDFAF2;
+  --cream-mid:  #F5EDD8;
+  --cream-dark: #EDE0C4;
+}
+
+html, body {
+  width:100%; height:100%;
+  overflow:hidden;
+}
+body {
+  display:flex; align-items:center; justify-content:center;
+  background: #1A0A02;
+  font-family:'Cormorant Garamond', serif;
+  user-select:none;
+}
+
+/* ── SCENE ── */
+#scene {
+  display:flex; flex-direction:column;
+  align-items:center; gap:32px;
+}
+
+/*
+  PERSPECTIVE CHAIN
+  #env-perspective  (perspective: 1600px)          ← camera
+    #envelope       (transform-style: preserve-3d) ← the whole envelope rotates here
+      #flap-top     (rotates inside same 3D space)  ← hinge is in sync ✓
+*/
+#env-perspective {
+  perspective: 1600px;
+  perspective-origin: 55% 40%;
+  cursor:pointer;
+}
+
+/* ── ENVELOPE ── */
+#envelope {
+  width:520px; height:330px;
+  position:relative;
+  /* NO preserve-3d — flap gets its own inline perspective via GSAP
+     so the two 3D contexts are isolated and the hinge never separates */
+  will-change:transform;
+}
+
+/* ── INTERIOR (warm gold shows when flap opens) ── */
+#env-interior {
+  position:absolute; inset:0;
+  border-radius:3px 3px 12px 12px;
+  background: linear-gradient(170deg, #C8A84A 0%, #B89630 40%, #C8A848 100%);
+  z-index:0;
+}
+
+/* ── BODY ── */
+#env-body {
+  position:absolute; inset:0;
+  /* Reference image: near-white ivory with subtle warm light from top-right */
+  background:
+    radial-gradient(ellipse at 72% 25%, rgba(255,255,248,.95) 0%, transparent 55%),
+    linear-gradient(148deg, #FAF7F0 0%, #F5EFE0 45%, #EDE4CC 100%);
+  border-radius:3px 3px 12px 12px;
+  box-shadow:
+    0 50px 110px rgba(60,28,0,.6),
+    0 16px 38px rgba(60,28,0,.32),
+    inset 0 1px 0 rgba(255,255,255,.95);
+  z-index:1;
+}
+
+/* X-fold crease lines — match the reference diagonal pattern */
+#env-body::before {
+  content:''; position:absolute; inset:0;
+  background:
+    linear-gradient(134deg, transparent 49.4%, rgba(180,155,100,.18) 49.4%, rgba(180,155,100,.18) 50.6%, transparent 50.6%),
+    linear-gradient(226deg, transparent 49.4%, rgba(180,155,100,.18) 49.4%, rgba(180,155,100,.18) 50.6%, transparent 50.6%);
+}
+
+/* right-edge soft highlight (matches bright right-side glow in reference) */
+#env-body::after {
+  content:''; position:absolute; inset:0;
+  background: radial-gradient(ellipse at 95% 50%, rgba(255,255,240,.6) 0%, transparent 45%);
+  border-radius: inherit;
+}
+
+/* ── SIDE TRIANGLES ── subtle shadow-tone tint */
+#env-left {
+  position:absolute; top:0; left:0; z-index:2;
+  width:0; height:0;
+  border-top:   165px solid transparent;
+  border-bottom:165px solid transparent;
+  border-left:  225px solid rgba(210,195,162,.42);
+}
+#env-right {
+  position:absolute; top:0; right:0; z-index:2;
+  width:0; height:0;
+  border-top:   165px solid transparent;
+  border-bottom:165px solid transparent;
+  border-right: 225px solid rgba(200,185,148,.38);
+}
+#env-bottom {
+  position:absolute; bottom:0; left:0; z-index:2;
+  width:0; height:0;
+  border-left:  260px solid transparent;
+  border-right: 260px solid transparent;
+  border-bottom:175px solid rgba(205,190,155,.55);
+}
+
+/*
+  ── TOP FLAP ──
+  top: -1px + transform-origin at 1px creates a 1-px physical overlap
+  with the envelope body — eliminates any sub-pixel gap at the hinge.
+  transformPerspective is set inline by GSAP (isolated 3D context).
+*/
+#flap-top {
+  position:absolute;
+  top:-1px; left:0;
+  width:520px; height:176px;
+  transform-origin: 50% 1px;
+  z-index:20;
+  will-change:transform;
+}
+
+/* visible fold crease line exactly at the hinge */
+#flap-top::after {
+  content:'';
+  position:absolute;
+  top:0; left:0; right:0; height:2px;
+  background: linear-gradient(90deg, transparent 0%, rgba(180,148,70,.55) 20%, rgba(180,148,70,.55) 80%, transparent 100%);
+  transform: translateZ(1px);
+}
+
+/* FRONT FACE — same pale ivory as the body */
+#flap-front {
+  position:absolute; inset:0;
+  background:
+    radial-gradient(ellipse at 70% 20%, rgba(255,255,248,.9) 0%, transparent 55%),
+    linear-gradient(160deg, #FAF7F0 0%, #F2EAD8 100%);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  backface-visibility:hidden;
+}
+/* subtle gold top edge glow */
+#flap-front::after {
+  content:''; position:absolute; inset:0;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  background: linear-gradient(180deg, rgba(201,168,76,.1) 0%, transparent 40%);
+}
+
+/* BACK FACE */
+#flap-back {
+  position:absolute; inset:0;
+  background: #C4A028;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  backface-visibility:hidden;
+  transform: rotateX(180deg);
+}
+
+/* ── WAX SEAL ── */
+#seal {
+  position:absolute;
+  left:50%; top:175px;
+  transform: translate(-50%, -50%);
+  width:170px; height:170px;
+  z-index:25;
+  will-change:transform, opacity;
+  backface-visibility: hidden;
+  /* filter movido para o img — filter no container quebra backface-visibility */
+}
+#seal img {
+  width:100%; height:100%;
+  object-fit:contain;
+  display:block;
+  mix-blend-mode: multiply;
+  filter: drop-shadow(0 6px 10px rgba(55,25,0,.45));
+}
+
+/* ── SHADOW ── */
+#env-shadow {
+  position:absolute; bottom:-26px; left:50%;
+  transform:translateX(-50%);
+  width:420px; height:26px;
+  background:radial-gradient(ellipse, rgba(60,28,0,.55) 0%, transparent 70%);
+  filter:blur(12px);
+  pointer-events:none; z-index:0;
+}
+
+/* ── HINT ── */
+#hint {
+  font-size:11px; letter-spacing:4.5px; text-transform:uppercase;
+  color:rgba(255,238,195,.68);
+}
+#hint span { display:inline-block; animation:pulse 2.8s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:.4} 50%{opacity:1} }
+
+/* ── OVERLAY ── */
+#overlay {
+  position:fixed; inset:0;
+  display:none;
+  align-items:center; justify-content:center;
+  z-index:200; padding:20px;
+}
+#backdrop {
+  position:absolute; inset:0;
+  background:rgba(35,18,2,.78);
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+  will-change:opacity;
+}
+
+/* ── LETTER CARD ── */
+#letter-card {
+  position:relative; z-index:1;
+  width:min(580px, 96vw);
+  overflow:visible;
+  background:linear-gradient(170deg, #FFFEFB 0%, #FDF8EF 55%, #F8F1E2 100%);
+  border-radius:3px;
+  padding:0;
+  box-shadow:
+    0 50px 130px rgba(45,22,0,.55),
+    0 14px 50px rgba(45,22,0,.32),
+    0 0 0 1px rgba(201,168,76,.22);
+  will-change:transform, opacity;
+}
+#letter-scroll {
+  position:relative;
+  max-height:90vh;
+  overflow-y:auto; overflow-x:hidden;
+  padding:52px 58px 52px;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(201,168,76,.3) transparent;
+}
+#letter-scroll::-webkit-scrollbar { width:4px; }
+#letter-scroll::-webkit-scrollbar-track { background:transparent; }
+#letter-scroll::-webkit-scrollbar-thumb { background:rgba(201,168,76,.35); border-radius:4px; }
+
+#letter-scroll::before {
+  content:''; position:absolute;
+  top:14px; left:14px; right:14px; bottom:14px;
+  border:1px solid rgba(201,168,76,.18); border-radius:2px; pointer-events:none;
+}
+#letter-card::after {
+  content:''; position:absolute;
+  top:0; left:10%; right:10%; height:2.5px;
+  background:linear-gradient(90deg, transparent, var(--gold) 25%, var(--gold) 75%, transparent);
+  opacity:.55; z-index:1;
+}
+
+/* logo no topo da carta */
+#letter-logo {
+  display:block; margin:0 auto 22px;
+  height:62px; width:auto;
+  opacity:.88;
+}
+
+/* close btn — riscado no topo do card */
+#close-btn {
+  position:absolute; top:-18px; left:50%;
+  transform: translate(-50%, -100%);
+  width:180px;
+  display:flex; align-items:center; gap:12px;
+  background:none; border:none;
+  cursor:pointer; z-index:2;
+  opacity:.75; transition:opacity .25s;
+}
+#close-btn:hover { opacity:1; }
+#close-btn::before,
+#close-btn::after {
+  content:''; flex:1; height:1px;
+  background: rgba(201,168,76,.55);
+}
+#close-btn span {
+  font-family:'Cormorant Garamond',serif;
+  font-size:15px; font-style:italic;
+  color:var(--gold-dark); white-space:nowrap;
+  letter-spacing:.3px;
+}
+
+/* letter content */
+#letter-header { text-align:center; margin-bottom:24px; }
+#letter-brand { font-size:10px; letter-spacing:5.5px; text-transform:uppercase; color:var(--gold); margin-bottom:10px; font-weight:600; }
+#letter-title { font-family:'Playfair Display',serif; font-size:28px; font-weight:400; color:#2A1A06; letter-spacing:.5px; line-height:1.2; }
+#letter-subtitle { font-size:15px; font-style:italic; color:var(--gold-dark); margin-top:4px; letter-spacing:.4px; }
+
+.ltr-divider { display:flex; align-items:center; gap:12px; margin:20px 0; }
+.ltr-divider span { flex:1; height:1px; background:linear-gradient(90deg,transparent,rgba(201,168,76,.38),transparent); }
+.ltr-divider em { color:var(--gold); font-style:normal; font-size:13px; }
+
+#letter-body { font-size:16px; line-height:1.95; color:#3C2810; font-weight:300; }
+#letter-body p { margin-bottom:13px; }
+#letter-body p:last-child { margin-bottom:0; }
+.letter-emphasis { font-style:italic; font-size:18px !important; color:#2A1A06 !important; line-height:1.75 !important; }
+.letter-invite { font-style:italic; color:#5A3A15 !important; }
+
+#letter-info { margin-top:22px; border:1px solid rgba(201,168,76,.32); background:rgba(201,168,76,.04); padding:16px 20px; border-radius:2px; }
+.info-row { display:flex; gap:16px; margin-bottom:10px; align-items:flex-start; }
+.info-row:last-child { margin-bottom:0; }
+.info-label { font-size:8.5px; letter-spacing:3.5px; text-transform:uppercase; color:var(--gold); min-width:48px; padding-top:3px; font-weight:600; }
+.info-value { font-size:14.5px; color:#2A1A06; font-weight:400; }
+
+#letter-closing { margin-top:20px; text-align:center; font-style:italic; color:#4A3018; font-size:14px; line-height:1.75; }
+#letter-brand-closing { font-family:'Playfair Display',serif; font-size:17px; font-style:normal; color:var(--gold-dark); font-weight:400; letter-spacing:1px; margin-top:3px; }
+
+@media (max-width:580px) {
+  #envelope { transform:scale(.72) rotateX(12deg) rotateY(-8deg); }
+}
+
+/* ── LOGO REVEAL ── */
+#logo-overlay {
+  display:none;
+  position:fixed; inset:0; z-index:300;
+  align-items:center; justify-content:center;
+  background: rgba(6,2,0,.92);
+}
+#logo-svg {
+  width: min(220px, 44vw);
+  height: auto;
+  overflow:visible;
+}
+/* non-scaling-stroke: espessura em CSS px, não em unidades SVG — sharp em todos os DPIs */
+#logo-svg use {
+  vector-effect: non-scaling-stroke;
+}
+
+/* ── RSVP BUTTON ── */
+#rsvp-btn {
+  display:flex; align-items:center; gap:14px;
+  width:100%; margin-top:28px;
+  background:none; border:none; padding:6px 0;
+  cursor:pointer;
+  opacity:.82;
+  transition: opacity .25s;
+}
+#rsvp-btn:hover { opacity:1; }
+#rsvp-btn::before,
+#rsvp-btn::after {
+  content:'';
+  flex:1; height:1px;
+  background: linear-gradient(90deg, transparent, rgba(201,168,76,.55));
+}
+#rsvp-btn::after {
+  background: linear-gradient(90deg, rgba(201,168,76,.55), transparent);
+}
+#rsvp-btn span {
+  font-family:'Cormorant Garamond', serif;
+  font-size:17px; font-style:italic; font-weight:400;
+  color:var(--gold-dark);
+  letter-spacing:.5px;
+  white-space:nowrap;
+}
+
+/* ── RSVP OVERLAY ── */
+#rsvp-overlay {
+  display:none;
+  position:fixed; inset:0;
+  z-index:200;
+  align-items:center; justify-content:center;
+}
+#rsvp-blur {
+  position:absolute; inset:0;
+  backdrop-filter: blur(5px) saturate(0.45) brightness(0.52);
+  -webkit-backdrop-filter: blur(5px) saturate(0.45) brightness(0.52);
+  background: rgba(8,3,0,.42);
+}
+#rsvp-card {
+  position:relative; z-index:1;
+  width: min(420px, 90vw);
+  background: linear-gradient(160deg, #FFFEFB 0%, #FDF8EF 60%, #F8F1E2 100%);
+  border-radius: 18px;
+  padding: 40px 36px 36px;
+  box-shadow: 0 24px 60px rgba(0,0,0,.55), 0 0 0 1px rgba(201,168,76,.2);
+  text-align:center;
+}
+#rsvp-card-close {
+  position:absolute; top:14px; right:16px;
+  background:none; border:1px solid rgba(201,168,76,.3);
+  border-radius:50%; width:30px; height:30px;
+  font-size:13px; color:var(--gold); cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition: background .2s, border-color .2s;
+}
+#rsvp-card-close:hover { background:rgba(201,168,76,.12); border-color:var(--gold); }
+
+#rsvp-card h2 {
+  font-family:'Playfair Display',serif;
+  font-size:22px; font-weight:400; color:#1A0A02;
+  letter-spacing:.5px; margin-bottom:6px;
+}
+#rsvp-card p {
+  font-size:13px; color:#5A3A15; line-height:1.7; margin-bottom:26px;
+}
+#rsvp-name {
+  width:100%; padding:13px 16px;
+  border: 1px solid rgba(201,168,76,.4);
+  border-radius:8px;
+  background: rgba(201,168,76,.04);
+  font-family:'Cormorant Garamond',serif;
+  font-size:16px; color:#1A0A02;
+  outline:none; margin-bottom:16px;
+  -webkit-appearance:none;
+  appearance:none;
+}
+#rsvp-name::placeholder { color:#B09070; }
+#rsvp-name:focus,
+#rsvp-name:hover { outline:none; box-shadow:none; border-color:rgba(201,168,76,.4); }
+#rsvp-confirm {
+  width:100%; padding:13px 0;
+  background: linear-gradient(135deg, #C9A84C, #A8841C);
+  border:none; border-radius:8px;
+  font-family:'Cormorant Garamond',serif;
+  font-size:13px; font-weight:600;
+  letter-spacing:3px; text-transform:uppercase;
+  color:#1A0A02; cursor:pointer;
+  transition: opacity .2s, box-shadow .25s;
+  box-shadow: 0 4px 16px rgba(201,168,76,.3);
+}
+#rsvp-confirm:hover { opacity:.88; box-shadow:0 6px 24px rgba(201,168,76,.5); }
+#rsvp-confirm:disabled { opacity:.45; cursor:default; }
+
+#rsvp-success {
+  display:none;
+  font-family:'Playfair Display',serif;
+  font-size:18px; color:var(--gold-dark);
+  line-height:1.65; padding:10px 0 4px;
+}
+#rsvp-success em { display:block; font-size:13px; font-style:normal; color:#5A3A15; margin-top:6px; font-family:'Cormorant Garamond',serif; }
+</style>
+</head>
+<body>
+
+<div id="scene">
+  <div id="env-perspective">
+    <div id="envelope">
+
+      <!-- 1. Interior (visible when flap opens — gives depth) -->
+      <div id="env-interior"></div>
+
+      <!-- 2. Cream body + fold creases -->
+      <div id="env-body">
+        <div id="env-left"></div>
+        <div id="env-right"></div>
+        <div id="env-bottom"></div>
+      </div>
+
+      <!--
+        3. TOP FLAP — direct child of #envelope (same preserve-3d context).
+           Hinge = top edge of envelope. Opens with rotationX(-180).
+           The fold crease line (::after) sits exactly at the hinge joint.
+      -->
+      <div id="flap-top">
+        <div id="flap-front"></div>
+        <div id="flap-back"></div>
+      </div>
+
+      <div id="seal">
+        <img src="seal.png" alt="Biteti Beauty seal"/>
+      </div>
+
+      <div id="env-shadow"></div>
+    </div>
+  </div>
+
+  <p id="hint"><span>Toque para abrir</span></p>
+</div>
+
+<!-- LETTER POPUP -->
+<div id="overlay">
+  <div id="backdrop"></div>
+  <div id="letter-card">
+    <button id="close-btn" title="Fechar"><span>✕ fechar</span></button>
+
+    <div id="letter-scroll">
+      <!-- logo no topo -->
+      <svg id="letter-logo" viewBox="0 0 764 866" xmlns="http://www.w3.org/2000/svg">
+        <path d="M125.816 0.194128C151.943 -0.23302 179.261 0.177667 205.463 0.179645L362.806 0.185559L445.917 0.161178C487.511 0.141402 520.84 -1.18421 559.715 17.3539C598.339 35.428 627.969 68.3935 641.835 108.708C657.482 153.732 654.831 203.098 634.444 246.185C618.58 279.289 591.62 305.789 558.238 321.078C548.967 325.329 539.512 328.163 529.886 331.524C536.123 332.337 542.512 331.53 548.598 332.511C636.422 346.662 705.91 413.927 738.943 494.295C780 592.974 772.576 721.639 694.332 800.266C648.112 846.712 583.873 867.028 519.548 865.558C510.772 865.36 501.727 865.565 492.92 865.558L417.772 865.538H235.444L85.0065 865.518L84.99 849.553L228.572 849.586L267.257 849.58C286.047 849.573 304.657 851.597 319.143 837.134C337.643 818.657 334.746 787.603 334.723 763.412C334.645 744.908 334.666 726.405 334.788 707.902C260.63 708.746 184.839 708.014 110.585 707.975L110.636 691.502C129.984 691.152 149.397 691.818 168.853 691.528C178.548 691.376 195.153 694.079 195.829 679.656C196.436 666.71 196.21 653.783 196.204 640.817L196.181 568.347L196.13 344.467C183.248 345.857 170.721 346.306 157.597 347.988C105.768 354.633 59.1834 372.358 27.3682 415.589C21.7744 423.19 19.255 426.913 14.5144 435.753C11.1168 442.088 7.5636 450.822 3.50668 456.629C3.04844 457.288 2.25987 457.038 1.19503 457.038L0.170419 455.759C-0.455295 452.002 0.753932 447.717 1.98031 444.151C14.7563 407.023 23.4972 366.843 36.4302 329.987C88.6895 330.874 143.532 329.835 196.098 330.027C196.899 290.272 196.276 249.882 196.179 209.902C195.145 162.429 198.803 115.396 194.009 68.0791C189.123 19.8522 169.867 14.8385 125.761 16.0112L125.816 0.194128ZM622.075 795.197C671.209 737.091 684.541 653.236 678.693 579.289C673.227 510.214 646.385 426.281 591.468 380.203C571.978 364.032 548.888 352.772 524.143 347.371C514.016 345.135 498.35 345.062 487.664 344.647C456.586 343.44 425.11 343.856 393.962 343.844L355.451 343.839C349.566 343.838 340.295 343.543 334.718 344.039C333.565 344.147 332.417 344.291 331.273 344.471C331.399 344.603 331.524 344.735 331.649 344.867C365.332 352.442 389.706 375.981 396.215 410.495C399.261 426.643 398.677 442.707 398.682 459.853L398.682 517.768L398.688 728.02L398.638 771.493C398.614 795.626 396.749 826.132 419.566 841.59C424.678 845.051 431.354 847.734 437.571 848.683C458.735 850.087 511.266 853.647 529.939 849.916C565.952 842.592 598.424 823.311 622.075 795.197ZM518.169 299.367C612.91 214.811 581.137 21.218 440.473 13.4245C412.653 11.8834 382.335 13.5234 354.253 13.1813C331.283 12.9025 306.546 12.4008 283.748 13.3395C275.491 15.1562 269.678 18.5141 264.969 25.8191C262.262 29.999 260.623 34.7793 260.196 39.7403C259.399 48.2562 260.065 57.7412 259.943 66.3626C258.699 153.838 260.672 241.548 258.826 328.984L378.468 329.008C432.934 329.013 472.859 335.679 518.169 299.367ZM334.678 691.587L334.692 651.621L334.657 568.532C334.656 547.26 332.823 518.75 337.506 498.738C344.274 469.819 372.145 445.904 374.226 415.125C378.072 369.109 329.162 347.811 290.643 344.411C280.598 343.525 269.95 343.82 259.914 343.845L260.007 575.822L259.963 644.95C259.959 656.268 259.73 667.679 260.307 678.971C260.423 681.251 262.817 685.266 264.457 686.723C271.704 693.169 284.897 691.429 293.689 691.568C307.434 691.778 321.079 691.093 334.678 691.587Z" fill="#2C1E16"/>
+      </svg>
+
+      <div id="letter-header">
+        <h1 id="letter-title">Carta Convite</h1>
+        <p id="letter-subtitle">Inauguração · São Paulo</p>
+      </div>
+
+      <div class="ltr-divider"><span></span><em>✦</em><span></span></div>
+
+      <div id="letter-body">
+        <p class="letter-emphasis">Existem momentos que não são apenas uma nova fase.<br>São a confirmação de um propósito.</p>
+        <p>A Biteti Beauty nasceu para transformar o cuidado com a beleza em uma experiência única, pensada em cada detalhe para despertar o poder que existe dentro de cada mulher que vem até nós.</p>
+        <p>Agora, damos mais um passo importante: a inauguração da nossa nova unidade em São Paulo. Um espaço ainda maior, criado para cuidar de mais mulheres, para que elas se sintam mais seguras, valorizadas e poderosas.</p>
+        <p>E ter você com a gente nesse dia torna tudo ainda mais especial.</p>
+        <p class="letter-invite">Você é nossa convidada para viver esse novo marco com a gente, na nova Biteti Beauty em São Paulo.</p>
+      </div>
+
+      <div id="letter-info">
+        <div class="info-row">
+          <span class="info-label">Data</span>
+          <span class="info-value">Sábado, 20 de junho · 20h00</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Local</span>
+          <span class="info-value">Av. Padre Lebret, 55 · Morumbi, São Paulo</span>
+        </div>
+      </div>
+
+      <div class="ltr-divider"><span></span><em>✦</em><span></span></div>
+
+      <div id="letter-closing">
+        <p>Com carinho, de todo o time</p>
+        <p id="letter-brand-closing">Biteti Beauty</p>
+      </div>
+
+      <button id="rsvp-btn"><span>Confirmar Presença</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- LOGO REVEAL -->
+<div id="logo-overlay">
+  <svg id="logo-svg" viewBox="0 0 764 866" xmlns="http://www.w3.org/2000/svg" shape-rendering="geometricPrecision">
+    <defs>
+      <path id="bp" d="M125.816 0.194128C151.943 -0.23302 179.261 0.177667 205.463 0.179645L362.806 0.185559L445.917 0.161178C487.511 0.141402 520.84 -1.18421 559.715 17.3539C598.339 35.428 627.969 68.3935 641.835 108.708C657.482 153.732 654.831 203.098 634.444 246.185C618.58 279.289 591.62 305.789 558.238 321.078C548.967 325.329 539.512 328.163 529.886 331.524C536.123 332.337 542.512 331.53 548.598 332.511C636.422 346.662 705.91 413.927 738.943 494.295C780 592.974 772.576 721.639 694.332 800.266C648.112 846.712 583.873 867.028 519.548 865.558C510.772 865.36 501.727 865.565 492.92 865.558L417.772 865.538H235.444L85.0065 865.518L84.99 849.553L228.572 849.586L267.257 849.58C286.047 849.573 304.657 851.597 319.143 837.134C337.643 818.657 334.746 787.603 334.723 763.412C334.645 744.908 334.666 726.405 334.788 707.902C260.63 708.746 184.839 708.014 110.585 707.975L110.636 691.502C129.984 691.152 149.397 691.818 168.853 691.528C178.548 691.376 195.153 694.079 195.829 679.656C196.436 666.71 196.21 653.783 196.204 640.817L196.181 568.347L196.13 344.467C183.248 345.857 170.721 346.306 157.597 347.988C105.768 354.633 59.1834 372.358 27.3682 415.589C21.7744 423.19 19.255 426.913 14.5144 435.753C11.1168 442.088 7.5636 450.822 3.50668 456.629C3.04844 457.288 2.25987 457.038 1.19503 457.038L0.170419 455.759C-0.455295 452.002 0.753932 447.717 1.98031 444.151C14.7563 407.023 23.4972 366.843 36.4302 329.987C88.6895 330.874 143.532 329.835 196.098 330.027C196.899 290.272 196.276 249.882 196.179 209.902C195.145 162.429 198.803 115.396 194.009 68.0791C189.123 19.8522 169.867 14.8385 125.761 16.0112L125.816 0.194128ZM622.075 795.197C671.209 737.091 684.541 653.236 678.693 579.289C673.227 510.214 646.385 426.281 591.468 380.203C571.978 364.032 548.888 352.772 524.143 347.371C514.016 345.135 498.35 345.062 487.664 344.647C456.586 343.44 425.11 343.856 393.962 343.844L355.451 343.839C349.566 343.838 340.295 343.543 334.718 344.039C333.565 344.147 332.417 344.291 331.273 344.471C331.399 344.603 331.524 344.735 331.649 344.867C365.332 352.442 389.706 375.981 396.215 410.495C399.261 426.643 398.677 442.707 398.682 459.853L398.682 517.768L398.688 728.02L398.638 771.493C398.614 795.626 396.749 826.132 419.566 841.59C424.678 845.051 431.354 847.734 437.571 848.683C458.735 850.087 511.266 853.647 529.939 849.916C565.952 842.592 598.424 823.311 622.075 795.197ZM518.169 299.367C612.91 214.811 581.137 21.218 440.473 13.4245C412.653 11.8834 382.335 13.5234 354.253 13.1813C331.283 12.9025 306.546 12.4008 283.748 13.3395C275.491 15.1562 269.678 18.5141 264.969 25.8191C262.262 29.999 260.623 34.7793 260.196 39.7403C259.399 48.2562 260.065 57.7412 259.943 66.3626C258.699 153.838 260.672 241.548 258.826 328.984L378.468 329.008C432.934 329.013 472.859 335.679 518.169 299.367ZM334.678 691.587L334.692 651.621L334.657 568.532C334.656 547.26 332.823 518.75 337.506 498.738C344.274 469.819 372.145 445.904 374.226 415.125C378.072 369.109 329.162 347.811 290.643 344.411C280.598 343.525 269.95 343.82 259.914 343.845L260.007 575.822L259.963 644.95C259.959 656.268 259.73 667.679 260.307 678.971C260.423 681.251 262.817 685.266 264.457 686.723C271.704 693.169 284.897 691.429 293.689 691.568C307.434 691.778 321.079 691.093 334.678 691.587Z"/>
+    </defs>
+    <!-- fantasma dim -->
+    <use href="#bp" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+    <!-- stroke principal que desenha a logo -->
+    <use id="bp-stroke" href="#bp" fill="none" stroke="rgba(255,255,255,0.88)" stroke-width="1.5"/>
+    <!-- 4 chasers dourados -->
+    <use id="bp-ch0" href="#bp" fill="none" stroke="#D4A832" stroke-width="2.5" stroke-linecap="round"/>
+    <use id="bp-ch1" href="#bp" fill="none" stroke="#D4A832" stroke-width="2.5" stroke-linecap="round"/>
+    <use id="bp-ch2" href="#bp" fill="none" stroke="#D4A832" stroke-width="2.5" stroke-linecap="round"/>
+    <use id="bp-ch3" href="#bp" fill="none" stroke="#D4A832" stroke-width="2.5" stroke-linecap="round"/>
+  </svg>
+</div>
+
+<!-- RSVP POPUP -->
+<div id="rsvp-overlay">
+  <div id="rsvp-blur"></div>
+  <div id="rsvp-card">
+    <button id="rsvp-card-close" title="Fechar">✕</button>
+    <h2>Confirmar Presença</h2>
+    <p>Insira seu nome completo para ser<br>adicionada à nossa lista de convidadas.</p>
+    <input id="rsvp-name" type="text" placeholder="Seu nome completo" autocomplete="name"/>
+    <button id="rsvp-confirm">Confirmar</button>
+    <div id="rsvp-success">
+      Presença confirmada!
+      <em>Estamos ansiosas para te receber.<br>Até lá, com carinho — Biteti Beauty</em>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── ANTI-INSPECT ── */
+(function(){
+  const THRESHOLD = 180;
+  function devOpen() {
+    return window.outerWidth  - window.innerWidth  > THRESHOLD ||
+           window.outerHeight - window.innerHeight > THRESHOLD;
+  }
+  function nuke() {
+    try { window.open('', '_self', ''); window.close(); } catch(e) {}
+    try { open(location, '_self').close(); } catch(e) {}
+    window.location.replace('about:blank');
+  }
+  setInterval(function(){ if (devOpen()) nuke(); }, 400);
+  window.addEventListener('resize', function(){ if (devOpen()) nuke(); });
+})();
+
+let isOpen = false, isAnimating = false;
+
+/*
+  PERSPECTIVE STRATEGY
+  ─────────────────────
+  Each element gets its own inline transformPerspective via GSAP.
+  This keeps the 3D contexts ISOLATED — no shared preserve-3d ancestry
+  that can cause the flap to visually separate at the hinge.
+
+  #envelope  → perspective 1600 px, initial tilt rotX(12) rotY(-8)
+  #flap-top  → perspective 900 px, rotates around its own 1-px-overlap hinge
+*/
+gsap.set('#envelope',    { transformPerspective: 1600, rotationX: 12, rotationY: -8 });
+gsap.set('#flap-top',   { transformPerspective: 900 });
+gsap.set('#seal',       { transformPerspective: 900, transformOrigin: '50% -90px' });
+gsap.set('#letter-card',{ transformPerspective: 900 });
+
+/* logo reveal no carregamento da página */
+showLogoReveal();
+
+/* idle float */
+const floatTween = gsap.to('#envelope', {
+  y: -10, duration: 2.6, ease:'sine.inOut', yoyo:true, repeat:-1
+});
+
+function envCenter() {
+  const r = document.getElementById('envelope').getBoundingClientRect();
+  return { x: r.left + r.width/2, y: r.top + r.height/2 };
+}
+
+/* ── OPEN ── */
+document.getElementById('env-perspective').addEventListener('click', openLetter);
+
+function openLetter() {
+  if (isOpen || isAnimating) return;
+  isAnimating = true;
+  floatTween.pause();
+
+  const { x:cx, y:cy } = envCenter();
+  const ox = cx - window.innerWidth/2;
+  const oy = cy - window.innerHeight/2;
+
+  gsap.set('#letter-card', { clearProps:'clipPath,rotationX' });
+  gsap.set('#overlay', { display:'flex' });
+
+  gsap.timeline({ onComplete(){ isAnimating=false; isOpen=true; } })
+
+    /* fade hint */
+    .to('#hint',     { opacity:0, duration:.3, ease:'power2.out' }, 0)
+
+    /* envelope faces camera (perspectiva própria) */
+    .to('#envelope', { rotationX:0, rotationY:0, y:0, duration:.55, ease:'power2.inOut' }, 0)
+
+    /* seal gira em torno da dobradiça — segue a ponta do flap e some ao cruzar 90° */
+    .to('#seal', { rotationX:-180, duration:.85, ease:'power3.inOut' }, .4)
+
+    /* flap opens — perspectiva própria, hinge no topo com 1px overlap */
+    .to('#flap-top', { rotationX:-180, duration:.85, ease:'power3.inOut' }, .4)
+
+    /* backdrop */
+    .fromTo('#backdrop', { opacity:0 }, { opacity:1, duration:.4, ease:'power2.out' }, .85)
+
+    /* carta surge do centro do envelope */
+    .fromTo('#letter-card',
+      { scale:0, x:ox, y:oy, opacity:0 },
+      { scale:1, x:0,  y:0,  opacity:1, duration:.75, ease:'expo.out' },
+      .98
+    );
+}
+
+/* ── LOGO REVEAL ── */
+function runLogoAnimation(onDone) {
+  const pathEl = document.querySelector('#logo-svg defs #bp');
+  const L = pathEl.getTotalLength();
+  const chLen = 110;
+  const gap   = L - chLen;
+
+  const strokeEl = document.querySelector('#bp-stroke');
+  strokeEl.style.strokeDasharray  = L + ' ' + L;
+  strokeEl.style.strokeDashoffset = L;
+
+  for (let i = 0; i < 4; i++) {
+    const ch = document.querySelector('#bp-ch' + i);
+    const startOff = -(L / 4) * i;
+    ch.style.strokeDasharray  = chLen + ' ' + gap;
+    ch.style.strokeDashoffset = startOff;
+    gsap.to(ch, { strokeDashoffset: startOff - L, duration: 1.2, ease: 'none' });
+  }
+
+  gsap.to(strokeEl, {
+    strokeDashoffset: 0, duration: 1.2, ease: 'power1.inOut',
+    onComplete: onDone
+  });
+}
+
+function showLogoReveal() {
+  const ov = document.getElementById('logo-overlay');
+  gsap.set(ov, { display:'flex', opacity:0 });
+  gsap.to(ov, {
+    opacity:1, duration:.35,
+    onComplete() {
+      runLogoAnimation(() => {
+        gsap.to(ov, {
+          opacity:0, duration:.5, delay:.25,
+          onComplete() {
+            gsap.set(ov, { display:'none' });
+          }
+        });
+      });
+    }
+  });
+}
+
+/* ── CLOSE ── */
+document.getElementById('close-btn').addEventListener('click', closeLetter);
+document.getElementById('backdrop').addEventListener('click', closeLetter);
+
+function closeLetter() {
+  if (!isOpen || isAnimating) return;
+  isAnimating = true;
+
+  const { x:cx, y:cy } = envCenter();
+  const ox = cx - window.innerWidth/2;
+  const oy = cy - window.innerHeight/2;
+
+  gsap.timeline({
+    onComplete() {
+      gsap.set('#overlay', { display:'none' });
+      isAnimating=false; isOpen=false;
+      floatTween.play();
+    }
+  })
+    .to('#letter-card', { scale:0, x:ox, y:oy, opacity:0, duration:.45, ease:'expo.in' })
+    .to('#backdrop',    { opacity:0, duration:.3, ease:'power2.in' }, '-=.2')
+    .to('#flap-top',    { rotationX:0, duration:.7, ease:'power3.inOut' }, '-=.05')
+    /* seal volta pelo mesmo arco */
+    .to('#seal',        { rotationX:0, duration:.7, ease:'power3.inOut' }, '<')
+    .to('#envelope',    { rotationX:12, rotationY:-8, duration:.5, ease:'power2.inOut' }, '-=.25')
+    .to('#hint',        { opacity:1, duration:.35 });
+}
+
+/* ── RSVP ── */
+const rsvpOverlay  = document.getElementById('rsvp-overlay');
+const rsvpName     = document.getElementById('rsvp-name');
+const rsvpConfirm  = document.getElementById('rsvp-confirm');
+const rsvpSuccess  = document.getElementById('rsvp-success');
+
+function openRsvp() {
+  rsvpName.value = '';
+  rsvpConfirm.disabled = false;
+  rsvpSuccess.style.display = 'none';
+  rsvpName.style.display = 'block';
+  rsvpConfirm.style.display = 'block';
+  rsvpOverlay.style.display = 'flex';
+  gsap.fromTo('#rsvp-card',
+    { scale:.88, opacity:0, y:18 },
+    { scale:1, opacity:1, y:0, duration:.45, ease:'back.out(1.6)' }
+  );
+}
+
+function closeRsvp() {
+  gsap.to('#rsvp-card', {
+    scale:.88, opacity:0, y:14, duration:.28, ease:'power2.in',
+    onComplete(){ rsvpOverlay.style.display = 'none'; }
+  });
+}
+
+document.getElementById('rsvp-btn').addEventListener('click', openRsvp);
+document.getElementById('rsvp-card-close').addEventListener('click', closeRsvp);
+document.getElementById('rsvp-blur').addEventListener('click', closeRsvp);
+
+rsvpConfirm.addEventListener('click', () => {
+  const nome = rsvpName.value.trim();
+  if (!nome) { rsvpName.focus(); return; }
+  rsvpConfirm.disabled = true;
+  gsap.to([rsvpName, rsvpConfirm], {
+    opacity:0, y:-8, duration:.25, ease:'power2.in',
+    onComplete(){
+      rsvpName.style.display = 'none';
+      rsvpConfirm.style.display = 'none';
+      rsvpSuccess.style.display = 'block';
+      gsap.fromTo('#rsvp-success',
+        { opacity:0, y:10 },
+        { opacity:1, y:0, duration:.4, ease:'power2.out' }
+      );
+    }
+  });
+});
+</script>
+</body>
+</html>
