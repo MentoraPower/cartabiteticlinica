@@ -558,8 +558,9 @@ body {
 </div>
 
 <script>
-/* ── ANTI-INSPECT ── */
+/* ── ANTI-INSPECT (desktop only) ── */
 (function(){
+  if ('ontouchstart' in window || navigator.maxTouchPoints > 0) return;
   const THRESHOLD = 180;
   function devOpen() {
     return window.outerWidth  - window.innerWidth  > THRESHOLD ||
