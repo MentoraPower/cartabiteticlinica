@@ -216,13 +216,18 @@ const SB_SERVICE = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI
 let _db = null;
 let _rows = [];
 
+function enterDashboard() {
+  document.getElementById('login').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  _db = supabase.createClient(SB_URL, SB_SERVICE);
+  loadData().then(startPolling);
+}
+
 function doLogin() {
   const v = document.getElementById('pwd').value;
   if (v === PASS) {
-    document.getElementById('login').style.display = 'none';
-    document.getElementById('dashboard').style.display = 'block';
-    _db = supabase.createClient(SB_URL, SB_SERVICE);
-    loadData().then(startPolling);
+    localStorage.setItem('btb_auth', '1');
+    enterDashboard();
   } else {
     document.getElementById('err').style.display = 'block';
   }
@@ -231,6 +236,8 @@ function doLogin() {
 document.getElementById('pwd').addEventListener('keydown', e => {
   if (e.key === 'Enter') doLogin();
 });
+
+if (localStorage.getItem('btb_auth') === '1') enterDashboard();
 
 function fmt(iso) {
   const d = new Date(iso);
