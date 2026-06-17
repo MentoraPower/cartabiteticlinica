@@ -126,10 +126,12 @@
     background:#2c1e16;
     border:1px solid #3d2a1e;
     border-radius:12px;
-    overflow:hidden;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
   }
   table{
     width:100%;
+    min-width:560px;
     border-collapse:collapse;
   }
   th{
@@ -158,6 +160,7 @@
   }
   td.muted{color:#6a4f3a;font-style:italic}
   td.date{color:#8a6a50;font-size:12px}
+  td.nome{min-width:160px}
   td a{color:#c9a97a;text-decoration:none}
   td a:hover{text-decoration:underline}
 
@@ -219,7 +222,7 @@ function doLogin() {
     document.getElementById('login').style.display = 'none';
     document.getElementById('dashboard').style.display = 'block';
     _db = supabase.createClient(SB_URL, SB_SERVICE);
-    loadData().then(subscribeRealtime);
+    loadData().then(startPolling);
   } else {
     document.getElementById('err').style.display = 'block';
   }
@@ -240,7 +243,7 @@ function rowHtml(r, num, isNew) {
     : '<span class="muted">—</span>';
   return `<tr data-id="${r.id}"${isNew ? ' class="new-row"' : ''}>
     <td style="color:#5a3d28;font-size:12px">${num}</td>
-    <td>${r.nome}</td>
+    <td class="nome">${r.nome}</td>
     <td>${r.telefone || '<span class="muted">—</span>'}</td>
     <td>${instaHtml}</td>
     <td class="date">${fmt(r.created_at)}</td>
@@ -277,18 +280,20 @@ async function loadData() {
   renderTable(false);
 }
 
-function subscribeRealtime() {
-  _db
-    .channel('rsvp-live')
-    .on('postgres_changes', {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'rsvp_confirmacoes'
-    }, payload => {
-      _rows.unshift(payload.new);
+function startPolling() {
+  setInterval(async () => {
+    if (!_rows.length) { await loadData(); return; }
+    const latest = _rows[0].created_at;
+    const { data } = await _db
+      .from('rsvp_confirmacoes')
+      .select('*')
+      .gt('created_at', latest)
+      .order('created_at', { ascending: false });
+    if (data && data.length) {
+      _rows = [...data, ..._rows];
       renderTable(true);
-    })
-    .subscribe();
+    }
+  }, 5000);
 }
 </script>
 </body>
