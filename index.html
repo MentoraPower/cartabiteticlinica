@@ -344,30 +344,25 @@ body {
 
 /* ── RSVP BUTTON ── */
 #rsvp-btn {
-  display:flex; align-items:center; gap:14px;
-  width:100%; margin-top:28px;
-  background:none; border:none; padding:6px 0;
-  cursor:pointer;
-  opacity:.82;
-  transition: opacity .25s;
+  display:block; width:100%; margin-top:28px;
+  padding:15px 0;
+  background: linear-gradient(135deg, #C9A84C 0%, #A8841C 50%, #C9A84C 100%);
+  background-size:200% 100%;
+  border:none; border-radius:4px;
+  font-family:'Cormorant Garamond',serif;
+  font-size:13px; font-weight:700;
+  letter-spacing:4px; text-transform:uppercase;
+  color:#1A0A02; cursor:pointer;
+  box-shadow: 0 6px 24px rgba(201,168,76,.38);
+  transition: background-position .4s, box-shadow .3s, transform .15s;
 }
-#rsvp-btn:hover { opacity:1; }
-#rsvp-btn::before,
-#rsvp-btn::after {
-  content:'';
-  flex:1; height:1px;
-  background: linear-gradient(90deg, transparent, rgba(201,168,76,.55));
+#rsvp-btn:hover {
+  background-position:100% 0;
+  box-shadow: 0 8px 32px rgba(201,168,76,.6);
+  transform: translateY(-1px);
 }
-#rsvp-btn::after {
-  background: linear-gradient(90deg, rgba(201,168,76,.55), transparent);
-}
-#rsvp-btn span {
-  font-family:'Cormorant Garamond', serif;
-  font-size:17px; font-style:italic; font-weight:400;
-  color:var(--gold-dark);
-  letter-spacing:.5px;
-  white-space:nowrap;
-}
+#rsvp-btn:active { transform:translateY(0); }
+#rsvp-btn span { pointer-events:none; }
 
 /* ── RSVP OVERLAY ── */
 #rsvp-overlay {
@@ -420,9 +415,21 @@ body {
   -webkit-appearance:none;
   appearance:none;
 }
-#rsvp-name::placeholder { color:#B09070; }
-#rsvp-name:focus,
-#rsvp-name:hover { outline:none; box-shadow:none; border-color:rgba(201,168,76,.4); }
+#rsvp-name, #rsvp-phone, #rsvp-insta { margin-bottom:12px; }
+#rsvp-name::placeholder,
+#rsvp-phone::placeholder,
+#rsvp-insta::placeholder { color:#B09070; }
+#rsvp-name:focus, #rsvp-name:hover,
+#rsvp-phone:focus, #rsvp-phone:hover,
+#rsvp-insta:focus, #rsvp-insta:hover { outline:none; box-shadow:none; border-color:rgba(201,168,76,.4); }
+#rsvp-phone, #rsvp-insta {
+  width:100%; padding:13px 16px;
+  border:1px solid rgba(201,168,76,.4); border-radius:8px;
+  background:rgba(201,168,76,.04);
+  font-family:'Cormorant Garamond',serif;
+  font-size:16px; color:#1A0A02;
+  outline:none; -webkit-appearance:none; appearance:none;
+}
 #rsvp-confirm {
   width:100%; padding:13px 0;
   background: linear-gradient(135deg, #C9A84C, #A8841C);
@@ -558,8 +565,10 @@ body {
     <button id="rsvp-card-close" title="Fechar">✕</button>
     <h2>Confirmar Presença</h2>
     <p>Insira seu nome completo para ser<br>adicionada à nossa lista de convidadas.</p>
-    <input id="rsvp-name" type="text" placeholder="Seu nome completo" autocomplete="name"/>
-    <button id="rsvp-confirm">Confirmar</button>
+    <input id="rsvp-name" type="text" placeholder="Nome completo" autocomplete="name"/>
+    <input id="rsvp-phone" type="tel" placeholder="Telefone / WhatsApp" autocomplete="tel"/>
+    <input id="rsvp-insta" type="text" placeholder="Instagram (sem @)" autocomplete="off"/>
+    <button id="rsvp-confirm">Confirmar Presença</button>
     <div id="rsvp-success">
       Presença confirmada!
       <em>Estamos ansiosas para te receber.<br>Até lá, com carinho — Biteti Beauty</em>
@@ -728,16 +737,18 @@ function closeLetter() {
 
 /* ── RSVP ── */
 const rsvpOverlay  = document.getElementById('rsvp-overlay');
-const rsvpName     = document.getElementById('rsvp-name');
-const rsvpConfirm  = document.getElementById('rsvp-confirm');
-const rsvpSuccess  = document.getElementById('rsvp-success');
+const rsvpName    = document.getElementById('rsvp-name');
+const rsvpPhone   = document.getElementById('rsvp-phone');
+const rsvpInsta   = document.getElementById('rsvp-insta');
+const rsvpConfirm = document.getElementById('rsvp-confirm');
+const rsvpSuccess = document.getElementById('rsvp-success');
+const rsvpFields  = [rsvpName, rsvpPhone, rsvpInsta];
 
 function openRsvp() {
-  rsvpName.value = '';
+  rsvpFields.forEach(f => { f.value=''; f.style.display='block'; f.style.opacity=1; f.style.transform=''; });
   rsvpConfirm.disabled = false;
   rsvpSuccess.style.display = 'none';
-  rsvpName.style.display = 'block';
-  rsvpConfirm.style.display = 'block';
+  rsvpConfirm.style.display = 'block'; rsvpConfirm.style.opacity = 1;
   rsvpOverlay.style.display = 'flex';
   gsap.fromTo('#rsvp-card',
     { scale:.88, opacity:0, y:18 },
@@ -760,10 +771,10 @@ rsvpConfirm.addEventListener('click', () => {
   const nome = rsvpName.value.trim();
   if (!nome) { rsvpName.focus(); return; }
   rsvpConfirm.disabled = true;
-  gsap.to([rsvpName, rsvpConfirm], {
+  gsap.to([...rsvpFields, rsvpConfirm], {
     opacity:0, y:-8, duration:.25, ease:'power2.in',
     onComplete(){
-      rsvpName.style.display = 'none';
+      rsvpFields.forEach(f => f.style.display='none');
       rsvpConfirm.style.display = 'none';
       rsvpSuccess.style.display = 'block';
       gsap.fromTo('#rsvp-success',
