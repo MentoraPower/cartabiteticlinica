@@ -83,30 +83,43 @@
     margin-bottom:32px;
     letter-spacing:.04em;
   }
+
   #stats{
-    display:flex;
-    gap:16px;
-    justify-content:center;
+    width:100%;
     margin-bottom:32px;
-    flex-wrap:wrap;
   }
   .stat{
     background:#2c1e16;
     border:1px solid #3d2a1e;
     border-radius:10px;
-    padding:18px 32px;
+    padding:22px 32px;
     text-align:center;
+    width:100%;
   }
   .stat .num{
-    font-size:36px;
+    font-size:48px;
     color:#c9a97a;
     line-height:1;
   }
   .stat .lbl{
     font-size:12px;
     color:#8a6a50;
-    letter-spacing:.06em;
-    margin-top:4px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    margin-top:6px;
+  }
+  .live-dot{
+    display:inline-block;
+    width:7px;height:7px;
+    background:#6dbb7a;
+    border-radius:50%;
+    margin-right:6px;
+    vertical-align:middle;
+    animation:pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%,100%{opacity:1;transform:scale(1)}
+    50%{opacity:.4;transform:scale(.7)}
   }
 
   .table-wrap{
@@ -135,31 +148,18 @@
     color:#d4b896;
     border-top:1px solid #3d2a1e;
     vertical-align:middle;
+    transition:background .3s;
   }
   tr:hover td{background:rgba(201,169,122,.06)}
+  tr.new-row td{animation:highlight .9s ease-out forwards}
+  @keyframes highlight{
+    0%{background:rgba(201,169,122,.22)}
+    100%{background:transparent}
+  }
   td.muted{color:#6a4f3a;font-style:italic}
   td.date{color:#8a6a50;font-size:12px}
-  td a{
-    color:#c9a97a;
-    text-decoration:none;
-  }
+  td a{color:#c9a97a;text-decoration:none}
   td a:hover{text-decoration:underline}
-
-  .refresh-btn{
-    background:none;
-    border:1px solid #5a3d28;
-    color:#c9a97a;
-    border-radius:6px;
-    padding:7px 18px;
-    font-size:13px;
-    cursor:pointer;
-    font-family:'Georgia',serif;
-    transition:border-color .2s,color .2s;
-    margin-bottom:18px;
-    float:right;
-  }
-  .refresh-btn:hover{border-color:#c9a97a}
-  .clearfix::after{content:'';display:table;clear:both}
 
   #loading{text-align:center;color:#5a3d28;padding:40px;font-size:14px}
   #empty{text-align:center;color:#5a3d28;padding:40px;font-size:14px;display:none}
@@ -181,11 +181,10 @@
   <p class="subtitle">LISTA DE CONFIRMADOS</p>
 
   <div id="stats">
-    <div class="stat"><div class="num" id="total-count">—</div><div class="lbl">Confirmados</div></div>
-  </div>
-
-  <div class="clearfix">
-    <button class="refresh-btn" onclick="loadData()">&#8635; Atualizar</button>
+    <div class="stat">
+      <div class="num" id="total-count">—</div>
+      <div class="lbl"><span class="live-dot"></span>Confirmados em tempo real</div>
+    </div>
   </div>
 
   <div class="table-wrap">
@@ -212,6 +211,7 @@ const SB_URL = 'https://xkrefjvhaeuksojkeojj.supabase.co';
 const SB_SERVICE = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhrcmVmanZoYWV1a3Nvamtlb2pqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NzIwNjg4MCwiZXhwIjoyMDgyNzgyODgwfQ.7Nbs77oMkcxXadQZuXT8aGCnECqdv1OjTNLUQGbQ0GM';
 
 let _db = null;
+let _rows = [];
 
 function doLogin() {
   const v = document.getElementById('pwd').value;
@@ -219,7 +219,7 @@ function doLogin() {
     document.getElementById('login').style.display = 'none';
     document.getElementById('dashboard').style.display = 'block';
     _db = supabase.createClient(SB_URL, SB_SERVICE);
-    loadData();
+    loadData().then(subscribeRealtime);
   } else {
     document.getElementById('err').style.display = 'block';
   }
@@ -232,6 +232,27 @@ document.getElementById('pwd').addEventListener('keydown', e => {
 function fmt(iso) {
   const d = new Date(iso);
   return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+}
+
+function rowHtml(r, num, isNew) {
+  const instaHtml = r.instagram
+    ? `<a href="https://instagram.com/${r.instagram}" target="_blank">@${r.instagram}</a>`
+    : '<span class="muted">—</span>';
+  return `<tr data-id="${r.id}"${isNew ? ' class="new-row"' : ''}>
+    <td style="color:#5a3d28;font-size:12px">${num}</td>
+    <td>${r.nome}</td>
+    <td>${r.telefone || '<span class="muted">—</span>'}</td>
+    <td>${instaHtml}</td>
+    <td class="date">${fmt(r.created_at)}</td>
+  </tr>`;
+}
+
+function renderTable(animate) {
+  const tbody = document.getElementById('tbody');
+  document.getElementById('empty').style.display = _rows.length === 0 ? 'block' : 'none';
+  document.getElementById('data-table').style.display = _rows.length === 0 ? 'none' : 'table';
+  document.getElementById('total-count').textContent = _rows.length;
+  tbody.innerHTML = _rows.map((r, i) => rowHtml(r, _rows.length - i, animate && i === 0)).join('');
 }
 
 async function loadData() {
@@ -247,34 +268,27 @@ async function loadData() {
   document.getElementById('loading').style.display = 'none';
 
   if (error || !data) {
-    document.getElementById('loading').style.display = 'block';
     document.getElementById('loading').textContent = 'Erro ao carregar dados.';
+    document.getElementById('loading').style.display = 'block';
     return;
   }
 
-  document.getElementById('total-count').textContent = data.length;
+  _rows = data;
+  renderTable(false);
+}
 
-  if (data.length === 0) {
-    document.getElementById('empty').style.display = 'block';
-    return;
-  }
-
-  const tbody = document.getElementById('tbody');
-  tbody.innerHTML = '';
-  data.forEach((r, i) => {
-    const instaHtml = r.instagram
-      ? `<a href="https://instagram.com/${r.instagram}" target="_blank">@${r.instagram}</a>`
-      : '<span class="muted">—</span>';
-    tbody.innerHTML += `
-      <tr>
-        <td style="color:#5a3d28;font-size:12px">${data.length - i}</td>
-        <td>${r.nome}</td>
-        <td>${r.telefone || '<span class="muted">—</span>'}</td>
-        <td>${instaHtml}</td>
-        <td class="date">${fmt(r.created_at)}</td>
-      </tr>`;
-  });
-  document.getElementById('data-table').style.display = 'table';
+function subscribeRealtime() {
+  _db
+    .channel('rsvp-live')
+    .on('postgres_changes', {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'rsvp_confirmacoes'
+    }, payload => {
+      _rows.unshift(payload.new);
+      renderTable(true);
+    })
+    .subscribe();
 }
 </script>
 </body>
